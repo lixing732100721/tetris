@@ -21,19 +21,36 @@ const title = ref('俄罗斯方块')
   </main>
 </template>
 
-<style scoped>
-header {
-  line-height: 1.5;
-  text-align: center;
+<style>
+/* 添加全局样式 */
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
+/* 响应式样式 */
+@media (max-width: 768px) {
+  header {
+    padding: 10px;
+  }
 
-h1 {
-  color: #42b883;
-  margin-bottom: 2rem;
+  .logo {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1rem;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  main {
+    padding: 0;
+  }
 }
 </style>

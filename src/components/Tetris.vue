@@ -211,10 +211,79 @@ function resetGame() {
   gameInterval.value = setInterval(gameLoop, 1000 - (level.value - 1) * 100)
 }
 
-// 初始化游戏
+// 添加触摸控制
+const touchStartX = ref(0)
+const touchStartY = ref(0)
+
+function handleTouchStart(event) {
+  if (gameOver.value || isPaused.value) return
+  touchStartX.value = event.touches[0].clientX
+  touchStartY.value = event.touches[0].clientY
+}
+
+function handleTouchEnd(event) {
+  if (gameOver.value || isPaused.value) return
+  
+  const touchEndX = event.changedTouches[0].clientX
+  const touchEndY = event.changedTouches[0].clientY
+  
+  const deltaX = touchEndX - touchStartX.value
+  const deltaY = touchEndY - touchStartY.value
+  
+  // 判断滑动方向
+  if (Math.abs(deltaX) > Math.abs(deltaY)) {
+    // 水平滑动
+    if (deltaX > 50) { // 右滑
+      const newPiece = {
+        ...currentPiece.value,
+        x: currentPiece.value.x + 1
+      }
+      if (!checkCollision(newPiece, board.value)) {
+        currentPiece.value = newPiece
+      }
+    } else if (deltaX < -50) { // 左滑
+      const newPiece = {
+        ...currentPiece.value,
+        x: currentPiece.value.x - 1
+      }
+      if (!checkCollision(newPiece, board.value)) {
+        currentPiece.value = newPiece
+      }
+    }
+  } else {
+    // 垂直滑动
+    if (deltaY > 50) { // 下滑
+      const newPiece = {
+        ...currentPiece.value,
+        y: currentPiece.value.y + 1
+      }
+      if (!checkCollision(newPiece, board.value)) {
+        currentPiece.value = newPiece
+      }
+    } else if (deltaY < -50) { // 上滑 - 旋转
+      const rotated = currentPiece.value.shape[0].map((_, i) =>
+        currentPiece.value.shape.map(row => row[i]).reverse()
+      )
+      const newPiece = {
+        ...currentPiece.value,
+        shape: rotated
+      }
+      if (!checkCollision(newPiece, board.value)) {
+        currentPiece.value = newPiece
+      }
+    }
+  }
+}
+
+// 添加移动设备检测
+const isMobile = ref(false)
+
 onMounted(() => {
   resetGame()
   window.addEventListener('keydown', handleKeydown)
+  window.addEventListener('touchstart', handleTouchStart)
+  window.addEventListener('touchend', handleTouchEnd)
+  isMobile.value = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
 })
 
 onUnmounted(() => {
@@ -222,12 +291,16 @@ onUnmounted(() => {
     clearInterval(gameInterval.value)
   }
   window.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('touchstart', handleTouchStart)
+  window.removeEventListener('touchend', handleTouchEnd)
 })
 </script>
 
 <template>
   <div class="tetris">
-    <div class="game-container">
+    <div class="game-container" 
+         @touchstart="handleTouchStart" 
+         @touchend="handleTouchEnd">
       <div class="side-panel">
         <div class="next-piece">
           <h3>下一个方块</h3>
@@ -254,10 +327,18 @@ onUnmounted(() => {
         </div>
         <div class="controls">
           <h3>操作说明</h3>
-          <p>↑ 旋转</p>
-          <p>← → 移动</p>
-          <p>↓ 加速下落</p>
-          <p>P 暂停/继续</p>
+          <template v-if="isMobile">
+            <p>上滑 旋转</p>
+            <p>左右滑动 移动</p>
+            <p>下滑 加速下落</p>
+            <p>点击屏幕 暂停/继续</p>
+          </template>
+          <template v-else>
+            <p>↑ 旋转</p>
+            <p>← → 移动</p>
+            <p>↓ 加速下落</p>
+            <p>P 暂停/继续</p>
+          </template>
         </div>
       </div>
       <div class="game-board" :style="{ width: BOARD_WIDTH * BLOCK_SIZE + 'px' }">
@@ -358,5 +439,63 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   background-color: #35495e;
+}
+
+/* 添加响应式样式 */
+@media (max-width: 768px) {
+  .tetris {
+    padding: 10px;
+  }
+
+  .game-container {
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .side-panel {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .game-board {
+    max-width: 100vw;
+    height: auto;
+  }
+
+  .cell {
+    width: calc(100vw / 12);
+    height: calc(100vw / 12);
+  }
+
+  .controls {
+    width: 100%;
+    text-align: center;
+  }
+
+  .next-piece {
+    margin-right: 20px;
+  }
+
+  .preview-board .cell {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* 防止页面滚动和缩放 */
+:root {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 优化触摸体验 */
+.game-board {
+  touch-action: none;
+  -webkit-touch-callout: none;
 }
 </style> 
